@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import re
 import sys
 from dataclasses import asdict, dataclass
@@ -333,7 +334,11 @@ def run_personal_ask(
         executor_config,
         workspace_config=workspace_config,
     )
-    if not _as_text(resolved_model):
+    if _requires_onboarding_setup(
+        model_override=model,
+        resolved_model=resolved_model,
+        workspace_config=workspace_config,
+    ):
         _write_connection_resolution_report(
             workspace_path,
             model_command=None,
@@ -429,7 +434,11 @@ def run_personal_session(
         executor_config,
         workspace_config=workspace_config,
     )
-    if not _as_text(resolved_model):
+    if _requires_onboarding_setup(
+        model_override=model,
+        resolved_model=resolved_model,
+        workspace_config=workspace_config,
+    ):
         _write_connection_resolution_report(
             workspace_path,
             model_command=None,
@@ -685,6 +694,27 @@ def run_personal_session(
         _save_personal_state(workspace_path, runtime.state_store.get_state())
 
     return 0
+
+
+def _requires_onboarding_setup(
+    *,
+    model_override: str | None,
+    resolved_model: str | None,
+    workspace_config: Any,
+) -> bool:
+    if not _as_text(resolved_model):
+        return True
+
+    # Explicit CLI/env override means user intentionally chose a runnable model command.
+    if _as_text(model_override) or _as_text(os.environ.get("SPICE_PERSONAL_MODEL")):
+        return False
+
+    provider = _as_text(getattr(workspace_config, "model_provider", "")).lower()
+    if provider != "openrouter":
+        return False
+
+    api_key_env = _as_text(getattr(workspace_config, "model_api_key_env", "")) or "OPENROUTER_API_KEY"
+    return not bool(_as_text(os.environ.get(api_key_env)))
 
 
 def ensure_personal_workspace(workspace: Path) -> bool:
