@@ -192,6 +192,35 @@ class PersonalAdvisoryContractGuardrailsTests(unittest.TestCase):
         )
         self.assertTrue(bool(assessment.get("passes")))
 
+    def test_ask_clarify_blocked_after_round_limit(self) -> None:
+        assessment = _evaluate_action_entry_assessment(
+            action="personal.assistant.ask_clarify",
+            advisory={
+                "confidence": 0.80,
+                "clarifying_questions": [
+                    {
+                        "question": "What is your top non-negotiable?",
+                        "why": "It can reorder recommendation ranking immediately.",
+                    },
+                    {
+                        "question": "How much downside can you tolerate this year?",
+                        "why": "It can change risk-adjusted ranking between options.",
+                    },
+                    {
+                        "question": "What measurable 3-year outcome matters most?",
+                        "why": "It can shift recommendation direction toward long-term fit.",
+                    },
+                ],
+            },
+            question="I have offer A and offer B. Goal is management in 3 years, medium risk tolerance.",
+            clarify_round_count=3,
+            clarify_round_limit=3,
+        )
+        self.assertFalse(bool(assessment.get("passes")))
+        reasons = assessment.get("reasons")
+        self.assertIsInstance(reasons, list)
+        self.assertIn("clarify_round_limit_reached", reasons)
+
 
 if __name__ == "__main__":
     unittest.main()
