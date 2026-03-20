@@ -271,6 +271,41 @@ class PersonalSimulationFanoutTests(unittest.TestCase):
         self.assertEqual(selected.selected_action, "personal.assistant.suggest")
         self.assertEqual(selected.attributes.get("recommended_option_id"), candidates[0].id)
 
+    def test_clarify_round_limit_prefers_suggest(self) -> None:
+        policy, _ = _build_policy(
+            strict_model=False,
+            simulation_fanout_limit=3,
+            artifacts_by_action={
+                "personal.assistant.suggest": _valid_artifact(
+                    "Option B is recommended now because your critical constraints are already explicit.",
+                    score=0.84,
+                    action="personal.assistant.suggest",
+                ),
+                "personal.assistant.ask_clarify": _valid_artifact(
+                    "ask one more question before deciding",
+                    score=0.96,
+                    action="personal.assistant.ask_clarify",
+                ),
+                "personal.assistant.defer": _valid_artifact(
+                    "defer briefly",
+                    score=0.30,
+                    action="personal.assistant.defer",
+                ),
+            },
+        )
+        candidates = policy.propose(
+            _world_state(
+                latest_question="I have offer A and offer B and need to decide soon.",
+                clarify_round_count=3,
+                clarify_round_limit=3,
+            ),
+            context=None,
+        )
+        selected = policy.select(candidates, DecisionObjective(), constraints=[])
+
+        self.assertEqual(selected.selected_action, "personal.assistant.suggest")
+        self.assertEqual(selected.attributes.get("recommended_option_id"), candidates[0].id)
+
     def test_suggest_action_specific_payload_is_accepted(self) -> None:
         policy, _ = _build_policy(
             strict_model=False,
@@ -376,7 +411,12 @@ def _build_policy(
     return policy, simulation_adapter
 
 
-def _world_state(*, latest_question: str = "") -> WorldState:
+def _world_state(
+    *,
+    latest_question: str = "",
+    clarify_round_count: int = 0,
+    clarify_round_limit: int = 3,
+) -> WorldState:
     entities: dict[str, object] = {}
     if latest_question:
         entities = {
@@ -385,6 +425,8 @@ def _world_state(*, latest_question: str = "") -> WorldState:
                 "latest_question": latest_question,
                 "urgency": "normal",
                 "confidence": 0.0,
+                "clarify_round_count": clarify_round_count,
+                "clarify_round_limit": clarify_round_limit,
             }
         }
     return WorldState(id="state-personal-fanout", entities=entities)
