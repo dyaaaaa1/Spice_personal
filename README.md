@@ -87,17 +87,9 @@ and generates a default configuration file.
 
 
 
-### 2. Initialize your workspace
-
-```bash
-spice-personal init
-```
-
-This creates a local personal workspace and generates the default configuration.
 
 
-
-### 3. Ask your first question
+### 2. Ask your first question
 
 ```bash
 spice-personal ask "What should I do next?"
@@ -114,7 +106,7 @@ Next:
 
 
 
-### 4. Connect a model
+### 3. Connect a model
 Edit the generated config file:
 > .spice/personal/personal.config.json
 
@@ -125,18 +117,18 @@ export OPENROUTER_API_KEY=...
 ```
 
 
-### 5. Run your intent
+### 4. Run your intent
 ```bash
 spice-personal ask "your intent"
 ```
 Now Spice will produce a real decision, not just a setup guide.
 
-### 6. (Optional) Interactive mode
+### 5. (Optional) Interactive mode
 ```bash
 spice-personal session
 ```
 
-### 7. (Optional) Connect external agents
+### 6. (Optional) Connect external agents
 
 Spice can delegate actions to external agents (e.g. Claude Code, Codex).
 
